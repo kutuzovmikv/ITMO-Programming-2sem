@@ -24,6 +24,9 @@ struct Vehicle {
 
     std::string countLength() {
         std::string route;
+
+
+
         return route;
     }
 };
