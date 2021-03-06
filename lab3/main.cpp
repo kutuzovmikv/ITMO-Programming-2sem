@@ -6,6 +6,28 @@
 #include <sstream>
 #include <cmath>
 
+struct Vehicle {
+    std::map<std::string, std::vector<std::pair<float, float> >> vec;
+    double longestpath = 0;
+    unsigned stops_amount = 0;
+
+    std::string countStops() {
+        std::string route;
+        for (auto &i : vec) {
+            if (stops_amount < i.second.size()) {
+                stops_amount = i.second.size();
+                route = i.first;
+            }
+        }
+        return route;
+    }
+
+    std::string countLength() {
+        std::string route;
+        return route;
+    }
+};
+
 int main() {
     system("chcp 65001");
     pugi::xml_document doc;
@@ -14,9 +36,9 @@ int main() {
 
     pugi::xml_node dataset = doc.child("dataset");
 
-    std::map<std::string, std::vector<std::pair<float, float> >> bus;
-    std::map<std::string, std::vector<std::pair<float, float> >> tram;
-    std::map<std::string, std::vector<std::pair<float, float> >> trolleybus;
+    Vehicle bus;
+    Vehicle tram;
+    Vehicle trolleybus;
 
     std::string delimiter = ",", token;
     for (pugi::xml_node tool = dataset.child("transport_station"); tool; tool = tool.next_sibling()) {
@@ -39,56 +61,19 @@ int main() {
         while ((pos = routes_list.find(delimiter)) != std::string::npos) {
             token = routes_list.substr(0, pos);
             if (vehicle == "Автобус") {
-                bus[token].emplace_back(coords.first, coords.second);
+                bus.vec[token].emplace_back(coords.first, coords.second);
             } else if (vehicle == "Трамвай") {
-                tram[token].emplace_back(coords.first, coords.second);
+                tram.vec[token].emplace_back(coords.first, coords.second);
             } else {
-                trolleybus[token].emplace_back(coords.first, coords.second);
+                trolleybus.vec[token].emplace_back(coords.first, coords.second);
             }
             routes_list.erase(0, pos + delimiter.length());
         }
     }
 
-    unsigned busmax = 0, trammax = 0, trolleybusmax = 0;
-    for(auto &i : bus){
-        busmax = std::max(busmax, i.second.size());
-    }
-    for(auto &i : tram){
-        trammax = std::max(trammax, i.second.size());
-    }
-    for(auto &i : trolleybus){
-        trolleybusmax = std::max(trolleybusmax, i.second.size());
-    }
-    std::cout << busmax << " " << trammax << " " << trolleybusmax << "\n";
+    std::cout << bus.countStops() << " " << tram.countStops() << " " << trolleybus.countStops() << "\n";
 
-    double buspath = 0, trampath = 0, trolleybuspath = 0;
-    for(auto &i : bus){
-        double path = 0;
-        for(int j = 1; j < i.second.size(); j++){
-            path += std::sqrt(pow(i.second[j].first - i.second[j-1].first,2) +
-                    pow(i.second[j].second - i.second[j-1].second,2));
-        }
-        buspath = std::max(path, buspath);
-    }
-    for(auto &i : tram){
-        double path = 0;
-        for(int j = 1; j < i.second.size(); j++){
-            path += std::sqrt(pow(i.second[j].first - i.second[j-1].first,2) +
-                    pow(i.second[j].second - i.second[j-1].second,2));
-        }
-        trampath = std::max(path, trampath);
-    }
-    for(auto &i : trolleybus){
-        double path = 0;
-        for(int j = 1; j < i.second.size(); j++){
-            path += std::sqrt(pow(i.second[j].first - i.second[j-1].first,2) +
-                    pow(i.second[j].second - i.second[j-1].second,2));
-        }
-        trolleybuspath = std::max(path, trolleybuspath);
-    }
-    std::cout << buspath << " " << trampath << " " << trolleybuspath << "\n";
-
-
+    //std::cout << bus.countLength() << " " << tram.countLength() << " " << trolleybus.countLength() << "\n";
 
     return 0;
 }
