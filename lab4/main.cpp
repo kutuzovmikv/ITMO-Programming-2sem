@@ -87,7 +87,7 @@ Iterator find_backward (Iterator first, Iterator last, Predicate pred)
 template<class Iterator, class Predicate>
 bool is_palindrome (Iterator first, Iterator last, Predicate pred)
 {
-    while (first!=last) {
+    while (first<last) {
         if (pred(*first) != pred(*last)) return false;
         --last;
         ++first;
