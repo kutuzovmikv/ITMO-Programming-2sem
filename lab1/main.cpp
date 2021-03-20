@@ -130,7 +130,7 @@ class Triangle : public Figure {
 public:
     explicit Triangle(Closed_Polyline &closedPolyline) : Figure(closedPolyline) {
         try {
-            if (contour.dots.size() != 3) throw "It is not Triangle";
+            if (contour.dots.size() != 4) throw "It is not Triangle";
         } catch (const char *exception) {
             cerr << "Error: " << exception << '\n';
         }
@@ -162,7 +162,7 @@ public:
         c = make_pair(-sidey(contour.dots, 2, 1), sidex(contour.dots, 2, 1));
         d = make_pair(-sidey(contour.dots, 3, 0), sidex(contour.dots, 3, 0));
         try {
-            if (a.first * b.first - a.second * b.second != 0 and c.first * d.first - c.second * d.second != 0) {
+            if (a.first * b.first - a.second * b.second != 0 and c.first * d.first - c.second * d.second != 0 or contour.dots.size() != 5) {
                 throw "It is not Trapeze";
             }
         } catch (const char *exception) {
