@@ -1,17 +1,16 @@
 #include <iostream>
-#include <vector>
+#include <unordered_map>
 #include <algorithm>
-#include <cassert>
 
 using namespace std;
 
 class Polynom {
-private:
-    vector<double> koefs;
+public:
+    unordered_map<unsigned, double> koefs;
 public:
     Polynom() = default;
 
-    explicit Polynom(vector<double> &k) : koefs(k) {}
+    explicit Polynom(unordered_map<unsigned, double> &k) : koefs(k) {}
 
     Polynom(const Polynom &other) = default;
 
@@ -19,132 +18,72 @@ public:
 
     Polynom &operator=(const Polynom &other) = default;
 
-    bool operator==(const Polynom &other) {
-        for (int i = 0; i < koefs.size(); i++) {
-            if (koefs[i] != other.koefs[i]) {
-                return false;
-            }
-        }
-        return true;
+    bool operator==(const Polynom &other) const {
+        return koefs == other.koefs;
     }
 
-    bool operator!=(const Polynom &other) {
+    bool operator!=(const Polynom &other) const {
         return !(*this == other);
     }
 
-    Polynom operator+(Polynom &other) {
+    Polynom &operator+=(const Polynom &other) {
+        for (auto i : other.koefs) {
+            koefs[i.first] += i.second;
+        }
+
+        return *this;
+    }
+
+    Polynom &operator-=(const Polynom &other) {
+        for (auto i : other.koefs) {
+            koefs[i.first] -= i.second;
+        }
+
+        return *this;
+    }
+
+    Polynom operator+(const Polynom &other) const {
         Polynom temp;
 
-        int slice = min(koefs.size(), other.koefs.size());
-
-        for (int i = 0; i < slice; i++) {
-            temp.koefs[i] = koefs[i] + other[i];
-        }
-
-        if (koefs.size() > other.koefs.size()) {
-            for (int i = slice; i < koefs.size(); i++) {
-                temp.koefs[i] = koefs[i];
-            }
-        } else {
-            for (int i = slice; i < other.koefs.size(); i++) {
-                temp.koefs[i] = other.koefs[i];
-            }
-        }
+        temp += *this;
+        temp += other;
 
         return temp;
     }
 
     Polynom operator-() const {
         Polynom temp;
-        for (int i = 0; i < koefs.size(); i++) {
-            temp.koefs[i] = -koefs[i];
-        }
+        temp -= *this;
 
         return temp;
     }
 
-    Polynom operator-(Polynom &other) {
+    Polynom operator-(const Polynom &other) const {
         Polynom temp;
 
-        int slice = min(koefs.size(), other.koefs.size());
-
-        for (int i = 0; i < slice; i++) {
-            temp.koefs[i] = koefs[i] - other[i];
-        }
-
-        if (koefs.size() > other.koefs.size()) {
-            for (int i = slice; i < koefs.size(); i++) {
-                temp.koefs[i] = koefs[i];
-            }
-        } else {
-            for (int i = slice; i < other.koefs.size(); i++) {
-                temp.koefs[i] = -other.koefs[i];
-            }
-        }
+        temp += *this;
+        temp -= other;
 
         return temp;
-    }
-
-    Polynom &operator+=(Polynom &other) {
-
-        int slice = min(koefs.size(), other.koefs.size());
-
-        for (int i = 0; i < slice; i++) {
-            koefs[i] += other[i];
-        }
-
-        if (koefs.size() < other.koefs.size()) {
-            for (int i = slice; i < other.koefs.size(); i++) {
-                koefs[i] = other.koefs[i];
-            }
-        }
-
-        return *this;
-    }
-
-    Polynom &operator-=(Polynom &other) {
-        int slice = min(koefs.size(), other.koefs.size());
-
-        for (int i = 0; i < slice; i++) {
-            koefs[i] -= other[i];
-        }
-
-        if (koefs.size() < other.koefs.size()) {
-            for (int i = slice; i < other.koefs.size(); i++) {
-                koefs[i] = -other.koefs[i];
-            }
-        }
-
-        return *this;
     }
 
     Polynom &operator/(double divider) {
-        assert(divider != 0);
-        for (double &koef : koefs) {
-            koef /= divider;
+        try {
+            if (divider == 0) throw "It is Coca Cola";
+        } catch (const char *exception) {
+            cerr << "Error: " << exception << '\n';
+        }
+        for (auto &koef : koefs) {
+            koef.second /= divider;
         }
         return *this;
     }
 
-    Polynom operator*(Polynom &other) {
-        Polynom temp;
-        temp.koefs.resize(max(koefs.size(), other.koefs.size()) + min(koefs.size(), other.koefs.size()) - 1);
-
-        for (int i = 0; i < koefs.size(); i++) {
-            for (int j = 0; j < other.koefs.size(); j++) {
-                temp.koefs[i + j] = koefs[i] * other.koefs[j];
-            }
-        }
-
-        return temp;
-    }
-
     Polynom &operator*=(Polynom &other) {
-        koefs.resize(max(koefs.size(), other.koefs.size()) + min(koefs.size(), other.koefs.size()) - 1);
 
-        for (int i = 0; i < koefs.size(); i++) {
-            for (int j = 0; j < other.koefs.size(); j++) {
-                koefs[i + j] = koefs[i] * other.koefs[j];
+        for (auto i : koefs) {
+            for (auto j : other.koefs) {
+                koefs[i.first + j.first] = i.second * j.second;
             }
         }
 
@@ -152,21 +91,33 @@ public:
     }
 
     Polynom &operator/=(Polynom &other) {
-        koefs.resize(max(koefs.size(), other.koefs.size()) + min(koefs.size(), other.koefs.size()) - 1);
 
-        for (int i = 0; i < koefs.size(); i++) {
-            for (int j = 0; j < other.koefs.size(); j++) {
-                koefs[i + j] = koefs[i] / other.koefs[j];
+        for (auto i : koefs) {
+            for (auto j : other.koefs) {
+                try {
+                    if (j.second == 0) throw "It is Coca Cola";
+                    koefs[i.first - j.first] = i.second / j.second;
+                } catch (const char *exception) {
+                    cerr << "Error: " << exception << '\n';
+                }
             }
         }
 
         return *this;
     }
 
+    Polynom operator*(Polynom &other) const {
+        Polynom temp;
+
+        temp = *this;
+        temp *= other;
+
+        return temp;
+    }
+
     friend std::ostream &operator<<(std::ostream &out, const Polynom &obj) {
-        out << obj.koefs.size() << endl;
-        for (double koef : obj.koefs) {
-            out << koef << " ";
+        for (auto koef : obj.koefs) {
+            out << koef.first << " : " << koef.second << "\n";
         }
         return out;
     }
@@ -174,9 +125,11 @@ public:
     friend std::istream &operator>>(std::istream &in, Polynom &obj) {
         int degree;
         in >> degree;
-        obj.koefs.resize(degree);
         for (int i = 0; i < degree; i++) {
-            in >> obj.koefs[i];
+            int key;
+            double value;
+            in >> key >> value;
+            obj.koefs[key] = value;
         }
         return in;
     }
@@ -185,3 +138,18 @@ public:
         return koefs[number];
     }
 };
+
+int main(){
+    unordered_map <unsigned, double> a = {
+            {1, 2},
+            {2,3},
+            {3, 4}
+    };
+    unordered_map <unsigned, double> b = {
+            {1, 16}
+    };
+    Polynom A(a);
+    Polynom B(b);
+    Polynom C = A * B;
+    cout << C;
+}
