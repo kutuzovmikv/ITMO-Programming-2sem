@@ -1,16 +1,17 @@
 #include <iostream>
 #include <unordered_map>
 #include <algorithm>
+#include <vector>
 
 using namespace std;
 
 class Polynom {
-public:
-    unordered_map<unsigned, double> koefs;
+private:
+    unordered_map<int, double> ratios;
 public:
     Polynom() = default;
 
-    explicit Polynom(unordered_map<unsigned, double> &k) : koefs(k) {}
+    explicit Polynom(unordered_map<int, double> &indices) : ratios(indices) {}
 
     Polynom(const Polynom &other) = default;
 
@@ -19,7 +20,7 @@ public:
     Polynom &operator=(const Polynom &other) = default;
 
     bool operator==(const Polynom &other) const {
-        return koefs == other.koefs;
+        return ratios == other.ratios;
     }
 
     bool operator!=(const Polynom &other) const {
@@ -27,16 +28,18 @@ public:
     }
 
     Polynom &operator+=(const Polynom &other) {
-        for (auto i : other.koefs) {
-            koefs[i.first] += i.second;
+        for (const auto &i : other.ratios) {
+            ratios[i.first] += i.second;
+            if (ratios[i.first] == 0) ratios.erase(i.first);
         }
 
         return *this;
     }
 
     Polynom &operator-=(const Polynom &other) {
-        for (auto i : other.koefs) {
-            koefs[i.first] -= i.second;
+        for (const auto &i : other.ratios) {
+            ratios[i.first] -= i.second;
+            if (ratios[i.first] == 0) ratios.erase(i.first);
         }
 
         return *this;
@@ -45,7 +48,7 @@ public:
     Polynom operator+(const Polynom &other) const {
         Polynom temp;
 
-        temp += *this;
+        temp = *this;
         temp += other;
 
         return temp;
@@ -53,6 +56,7 @@ public:
 
     Polynom operator-() const {
         Polynom temp;
+
         temp -= *this;
 
         return temp;
@@ -61,50 +65,37 @@ public:
     Polynom operator-(const Polynom &other) const {
         Polynom temp;
 
-        temp += *this;
+        temp = *this;
         temp -= other;
 
         return temp;
     }
 
-    Polynom &operator/(double divider) {
-        try {
-            if (divider == 0) throw "It is Coca Cola";
-        } catch (const char *exception) {
-            cerr << "Error: " << exception << '\n';
+    Polynom &operator/(const double divider) {
+        if (divider == 0) throw std::invalid_argument("You can't divide by zero");
+
+        for (auto &i : ratios) {
+            i.second /= divider;
         }
-        for (auto &koef : koefs) {
-            koef.second /= divider;
-        }
+
         return *this;
     }
 
-    Polynom &operator*=(Polynom &other) {
+    Polynom &operator*=(const Polynom &other) {
+        Polynom temp;
 
-        for (auto i : koefs) {
-            for (auto j : other.koefs) {
-                koefs[i.first + j.first] = i.second * j.second;
+        for (const auto &i : ratios) {
+            for (const auto &j : other.ratios) {
+                temp.ratios[i.first + j.first] += i.second * j.second;
             }
         }
 
-        return *this;
+        return *this = temp;
     }
 
-    Polynom &operator/=(Polynom &other) {
+    /*Polynom &operator /= (const Polynom &other) {
 
-        for (auto i : koefs) {
-            for (auto j : other.koefs) {
-                try {
-                    if (j.second == 0) throw "It is Coca Cola";
-                    koefs[i.first - j.first] = i.second / j.second;
-                } catch (const char *exception) {
-                    cerr << "Error: " << exception << '\n';
-                }
-            }
-        }
-
-        return *this;
-    }
+    }*/
 
     Polynom operator*(Polynom &other) const {
         Polynom temp;
@@ -116,9 +107,11 @@ public:
     }
 
     friend std::ostream &operator<<(std::ostream &out, const Polynom &obj) {
-        for (auto koef : obj.koefs) {
-            out << koef.first << " : " << koef.second << "\n";
+
+        for(const auto &i : obj.ratios){
+            out << i.first << " : " << i.second << "\n";
         }
+
         return out;
     }
 
@@ -129,24 +122,26 @@ public:
             int key;
             double value;
             in >> key >> value;
-            obj.koefs[key] = value;
+            obj.ratios[key] = value;
         }
         return in;
     }
 
     double operator[](int number) {
-        return koefs[number];
+        return ratios[number];
     }
 };
 
-int main(){
-    unordered_map <unsigned, double> a = {
-            {1, 2},
-            {2,3},
-            {3, 4}
+int main() {
+    unordered_map<int, double> a = {
+            {5, 6},
+            {1, 9},
+            {0, -12}
     };
-    unordered_map <unsigned, double> b = {
-            {1, 16}
+    unordered_map<int, double> b = {
+            {2, 2},
+            {1, 3},
+            {0, -4}
     };
     Polynom A(a);
     Polynom B(b);
