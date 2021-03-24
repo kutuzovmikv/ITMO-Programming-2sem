@@ -1,7 +1,6 @@
 #include <iostream>
 #include <unordered_map>
 #include <algorithm>
-#include <vector>
 
 using namespace std;
 
@@ -93,9 +92,19 @@ public:
         return *this = temp;
     }
 
-    /*Polynom &operator /= (const Polynom &other) {
-
-    }*/
+    Polynom &operator/=(Polynom &other) {
+        Polynom temp = *this;
+        unsigned rdeg = temp.ratios.size() - other.ratios.size() + 1;
+        Polynom res;
+        for (int i = 0; i < rdeg; i++) {
+            res.ratios[rdeg - i - 1] = temp.ratios[temp.ratios.size() - i - 1] / other.ratios[other.ratios.size() - 1];
+            for (int j = 0; j < other.ratios.size(); j++) {
+                temp.ratios[temp.ratios.size() - j - i - 1] -=
+                        other.ratios[other.ratios.size() - j - 1] * res.ratios[rdeg - i - 1];
+            }
+        }
+        return *this = res;
+    }
 
     Polynom operator*(Polynom &other) const {
         Polynom temp;
@@ -108,7 +117,7 @@ public:
 
     friend std::ostream &operator<<(std::ostream &out, const Polynom &obj) {
 
-        for(const auto &i : obj.ratios){
+        for (const auto &i : obj.ratios) {
             out << i.first << " : " << i.second << "\n";
         }
 
@@ -116,9 +125,9 @@ public:
     }
 
     friend std::istream &operator>>(std::istream &in, Polynom &obj) {
-        int degree;
+        unsigned degree;
         in >> degree;
-        for (int i = 0; i < degree; i++) {
+        for (unsigned i = 0; i < degree; i++) {
             int key;
             double value;
             in >> key >> value;
@@ -134,7 +143,7 @@ public:
 
 int main() {
     unordered_map<int, double> a = {
-            {5, 6},
+            {2, 6},
             {1, 9},
             {0, -12}
     };
@@ -145,6 +154,6 @@ int main() {
     };
     Polynom A(a);
     Polynom B(b);
-    Polynom C = A * B;
+    Polynom C = A /= B;
     cout << C;
 }
