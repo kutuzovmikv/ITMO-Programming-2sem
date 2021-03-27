@@ -14,6 +14,7 @@ public:
 
     Polynom(const Polynom &other) = default;
 
+
     ~Polynom() = default;
 
     Polynom &operator=(const Polynom &other) = default;
