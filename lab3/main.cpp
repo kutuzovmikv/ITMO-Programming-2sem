@@ -1,17 +1,15 @@
 #include <iostream>
 #include "XML/pugixml.hpp"
 #include <vector>
-#include <map>
-#include <algorithm>
+#include <unordered_map>
 #include <sstream>
 #include <cmath>
 
 struct Vehicle {
-    std::map<std::string, std::vector<std::pair<float, float> >> vec;
-    double longestpath = 0;
-    unsigned stops_amount = 0;
+    std::unordered_map<std::string, std::vector<std::pair<float, float> >> vec;
 
-    std::string countStops() {
+    std::string countStops() { //max_element
+        unsigned stops_amount = 0;
         std::string route;
         for (const auto &i : vec) {
             if (stops_amount < i.second.size()) {
@@ -27,7 +25,7 @@ struct Vehicle {
 
         double biggestpath = -1;
 
-        for (auto &i : vec) {
+        for (const auto &i : vec) {
             std::vector<bool> used(i.second.size(), false);
             int counter = 1;
 
@@ -36,7 +34,7 @@ struct Vehicle {
             double p = 0;
 
             while (counter != i.second.size()) {
-                double mpath = 1000;
+                double mpath = 1000000;
                 int mcur = 0;
                 for (int j = 0; j < i.second.size(); j++) {
                     double path = sqrt(pow(i.second[cur].first - i.second[j].first, 2)
@@ -63,6 +61,7 @@ struct Vehicle {
 
 int main() {
     system("chcp 65001");
+    //setlocale(LC_ALL, 0);
     pugi::xml_document doc;
 
     pugi::xml_parse_result result = doc.load_file("data.xml");
@@ -73,7 +72,7 @@ int main() {
     Vehicle tram;
     Vehicle trolleybus;
 
-    std::map<std::string, int> streetsFrequency;
+    std::unordered_map<std::string, int> streetsFrequency;
 
     std::string delimiter = ",", token;
     for (pugi::xml_node tool = dataset.child("transport_station"); tool; tool = tool.next_sibling()) {
@@ -87,18 +86,11 @@ int main() {
         while ((pos = streets.find(delimiter)) != std::string::npos) {
             token = streets.substr(0, pos);
             streets.erase(0, pos + delimiter.length());
-            auto itT = streetsFrequency.find(token), itS = streetsFrequency.find(streets);
-            if(itT == streetsFrequency.end()){
-                streetsFrequency[token] = 1;
-            } else {
-                streetsFrequency[token]++;
-            }
 
-            if(itS == streetsFrequency.end()){
-                streetsFrequency[streets] = 1;
-            } else {
-                streetsFrequency[streets]++;
-            }
+            streetsFrequency[token]++;
+
+            streetsFrequency[streets]++;
+
         }
 
         for (auto &i : routes_list) if (i == '.') i = ',';
@@ -125,14 +117,15 @@ int main() {
         }
     }
 
-    std::cout << bus.countStops() << " " << tram.countStops() << " " << trolleybus.countStops() << "\n";
+    std::cout << "Max bus stops : " << bus.countStops() << "\nMax tram stops : " << tram.countStops()
+              << "\nMax trolleybus stops " << trolleybus.countStops() << "\n";
     std::cout << bus.countLength() << " " << tram.countLength() << " " << trolleybus.countLength() << "\n";
 
     std::string famousStreet;
     int bestStop = 0;
 
-    for(const auto& i : streetsFrequency){
-        if(i.second > bestStop){
+    for (const auto &i : streetsFrequency) { // max_element
+        if (i.second > bestStop) {
             famousStreet = i.first;
             bestStop = i.second;
         }
