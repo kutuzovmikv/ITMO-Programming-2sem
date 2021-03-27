@@ -45,9 +45,8 @@ public:
     }
 
     Polynom operator+(const Polynom &other) const {
-        Polynom temp;
+        Polynom temp = *this;
 
-        temp = *this;
         temp += other;
 
         return temp;
@@ -62,9 +61,8 @@ public:
     }
 
     Polynom operator-(const Polynom &other) const {
-        Polynom temp;
+        Polynom temp = *this;
 
-        temp = *this;
         temp -= other;
 
         return temp;
@@ -107,9 +105,7 @@ public:
     }
 
     Polynom operator*(Polynom &other) const {
-        Polynom temp;
-
-        temp = *this;
+        Polynom temp = *this;
         temp *= other;
 
         return temp;
