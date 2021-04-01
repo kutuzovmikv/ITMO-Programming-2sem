@@ -1,5 +1,3 @@
-#include <iostream>
-
 template<typename Iterator, typename Predicate>
 bool all_of(Iterator first, Iterator last, Predicate pred) {
     while (first != last) {
@@ -24,24 +22,31 @@ bool none_of(Iterator first, Iterator last, Predicate pred) {
 }
 
 template<typename Iterator, typename Predicate>
-bool one_of(Iterator first, Iterator last, Predicate pred) {
-    int counter = 0;
+bool one_of(Iterator first, Iterator last, Predicate pred) { //flag
+    enum Colors {
+        none = 0,
+        one,
+        more
+    };
+
+    Colors flag(none);
     while (first != last) {
-        if (pred(*first)) counter++;
-        if (counter > 1) return false;
+        if (pred(*first)) flag++;
+        if (flag == more) return false;
         ++first;
     }
-    if (counter == 1) return true; else return false;
+    if (flag == one) return true; else return false;
 }
 
-template<typename Iterator>
-bool is_sorted(Iterator first, Iterator last) { //добавить компраатор
-    if (first == last) return true;
-    Iterator next = first;
-    while (++next != last) {
-        if (*next < *first)
-            return false;
-        ++first;
+template<typename ForwardIt, typename Compare>
+bool is_sorted(ForwardIt first, ForwardIt last, Compare comp) {
+    if (first != last) {
+        ForwardIt next = first;
+        while (++next != last) {
+            if (comp(*next, *first))
+                return false;
+            first = next;
+        }
     }
     return true;
 }
@@ -58,7 +63,7 @@ bool is_partitioned(Iterator first, Iterator last, Predicate pred) {
     return true;
 }
 
-template<class Iterator, class Predicate>
+template<typename Iterator, typename Predicate>
 Iterator find_not(Iterator first, Iterator last, Predicate pred) {
     while (first != last) {
         if (!pred(*first)) return first;
@@ -67,8 +72,11 @@ Iterator find_not(Iterator first, Iterator last, Predicate pred) {
     return last;
 }
 
-template<class Iterator, class Predicate>
-Iterator find_backward(Iterator first, Iterator last, Predicate pred) { //ласт пофикстить
+template<typename Iterator, typename Predicate>
+Iterator find_backward(Iterator first, Iterator last, Predicate pred) {
+    if (first == last)
+        return first;
+    --last;
     while (last != first) {
         if (pred(*last)) return last;
         --last;
@@ -76,17 +84,15 @@ Iterator find_backward(Iterator first, Iterator last, Predicate pred) { //лас
     return first;
 }
 
-template<class Iterator, class Predicate>
-bool is_palindrome(Iterator first, Iterator last, Predicate pred) { //ласт пофиксить + проверка на иравенство
+template<typename Iterator, typename Predicate>
+bool is_palindrome(Iterator first, Iterator last, Predicate pred) {
+    if (first == last)
+        return true;
+    --last;
     while (first < last) {
         if (pred(*first) != pred(*last)) return false;
         --last;
         ++first;
     }
     return true;
-}
-
-int main() {
-    std::cout << "Hello, World!" << std::endl;
-    return 0;
 }
