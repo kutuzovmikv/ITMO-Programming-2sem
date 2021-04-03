@@ -2,32 +2,29 @@
 #include <unordered_map>
 #include <algorithm>
 
-using namespace std;
-
-class Polynom {
+class Polynomial {
 private:
-    unordered_map<int, double> ratios;
+    std::unordered_map<int, double> ratios;
 public:
-    Polynom() = default;
+    Polynomial() = default;
 
-    explicit Polynom(unordered_map<int, double> &indices) : ratios(indices) {}
+    explicit Polynomial(std::unordered_map<int, double> &indices) : ratios(indices) {}
 
-    Polynom(const Polynom &other) = default;
+    Polynomial(const Polynomial &other) = default;
 
+    ~Polynomial() = default;
 
-    ~Polynom() = default;
+    Polynomial &operator=(const Polynomial &other) = default;
 
-    Polynom &operator=(const Polynom &other) = default;
-
-    bool operator==(const Polynom &other) const {
+    bool operator==(const Polynomial &other) const {
         return ratios == other.ratios;
     }
 
-    bool operator!=(const Polynom &other) const {
+    bool operator!=(const Polynomial &other) const {
         return !(*this == other);
     }
 
-    Polynom &operator+=(const Polynom &other) {
+    Polynomial &operator+=(const Polynomial &other) {
         for (const auto &i : other.ratios) {
             ratios[i.first] += i.second;
             if (ratios[i.first] == 0) ratios.erase(i.first);
@@ -36,7 +33,7 @@ public:
         return *this;
     }
 
-    Polynom &operator-=(const Polynom &other) {
+    Polynomial &operator-=(const Polynomial &other) {
         for (const auto &i : other.ratios) {
             ratios[i.first] -= i.second;
             if (ratios[i.first] == 0) ratios.erase(i.first);
@@ -45,31 +42,31 @@ public:
         return *this;
     }
 
-    Polynom operator+(const Polynom &other) const {
-        Polynom temp = *this;
+    Polynomial operator+(const Polynomial &other) const {
+        Polynomial temp = *this;
 
         temp += other;
 
         return temp;
     }
 
-    Polynom operator-() const {
-        Polynom temp;
+    Polynomial operator-() const {
+        Polynomial temp;
 
         temp -= *this;
 
         return temp;
     }
 
-    Polynom operator-(const Polynom &other) const {
-        Polynom temp = *this;
+    Polynomial operator-(const Polynomial &other) const {
+        Polynomial temp = *this;
 
         temp -= other;
 
         return temp;
     }
 
-    Polynom &operator/(const double divider) {
+    Polynomial &operator/(const double divider) {
         if (divider == 0) throw std::invalid_argument("You can't divide by zero");
 
         for (auto &i : ratios) {
@@ -79,8 +76,8 @@ public:
         return *this;
     }
 
-    Polynom &operator*=(const Polynom &other) {
-        Polynom temp;
+    Polynomial &operator*=(const Polynomial &other) {
+        Polynomial temp;
 
         for (const auto &i : ratios) {
             for (const auto &j : other.ratios) {
@@ -91,28 +88,28 @@ public:
         return *this = temp;
     }
 
-    Polynom &operator/=(Polynom &other) {
-        Polynom temp = *this;
-        unsigned rdeg = temp.ratios.size() - other.ratios.size() + 1;
-        Polynom res;
-        for (int i = 0; i < rdeg; i++) {
-            res.ratios[rdeg - i - 1] = temp.ratios[temp.ratios.size() - i - 1] / other.ratios[other.ratios.size() - 1];
+    Polynomial &operator/=(Polynomial &other) {
+        Polynomial temp = *this;
+        unsigned deg = temp.ratios.size() - other.ratios.size() + 1;
+        Polynomial res;
+        for (int i = 0; i < deg; i++) {
+            res.ratios[deg - i - 1] = temp.ratios[temp.ratios.size() - i - 1] / other.ratios[other.ratios.size() - 1];
             for (int j = 0; j < other.ratios.size(); j++) {
                 temp.ratios[temp.ratios.size() - j - i - 1] -=
-                        other.ratios[other.ratios.size() - j - 1] * res.ratios[rdeg - i - 1];
+                        other.ratios[other.ratios.size() - j - 1] * res.ratios[deg - i - 1];
             }
         }
         return *this = res;
     }
 
-    Polynom operator*(Polynom &other) const {
-        Polynom temp = *this;
+    Polynomial operator*(Polynomial &other) const {
+        Polynomial temp = *this;
         temp *= other;
 
         return temp;
     }
 
-    friend std::ostream &operator<<(std::ostream &out, const Polynom &obj) {
+    friend std::ostream &operator<<(std::ostream &out, const Polynomial &obj) {
 
         for (const auto &i : obj.ratios) {
             out << i.first << " : " << i.second << "\n";
@@ -121,7 +118,7 @@ public:
         return out;
     }
 
-    friend std::istream &operator>>(std::istream &in, Polynom &obj) {
+    friend std::istream &operator>>(std::istream &in, Polynomial &obj) {
         unsigned degree;
         in >> degree;
         for (unsigned i = 0; i < degree; i++) {
@@ -139,18 +136,18 @@ public:
 };
 
 int main() {
-    unordered_map<int, double> a = {
+    std::unordered_map<int, double> a = {
             {2, 6},
             {1, 9},
             {0, -12}
     };
-    unordered_map<int, double> b = {
+    std::unordered_map<int, double> b = {
             {2, 2},
             {1, 3},
             {0, -4}
     };
-    Polynom A(a);
-    Polynom B(b);
-    Polynom C = A /= B;
-    cout << C;
+    Polynomial A(a);
+    Polynomial B(b);
+    Polynomial C = A /= B;
+    std::cout << C;
 }

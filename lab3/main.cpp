@@ -4,26 +4,27 @@
 #include <unordered_map>
 #include <sstream>
 #include <cmath>
+#include <algorithm>
 
 struct Vehicle {
     std::unordered_map<std::string, std::vector<std::pair<float, float> >> vec;
 
-    std::string countStops() { //max_element
-        unsigned stops_amount = 0;
+    std::string countStops() {
         std::string route;
-        for (const auto &i : vec) {
-            if (stops_amount < i.second.size()) {
-                stops_amount = i.second.size();
-                route = i.first;
-            }
-        }
-        return route;
+
+        auto x = std::max_element(vec.begin(), vec.end(),
+                                  [](const std::pair<std::string, std::vector<std::pair<float, float> >> &p1,
+                                     const std::pair<std::string, std::vector<std::pair<float, float> >> &p2) {
+                                      return p1.second.size() < p2.second.size();
+                                  });
+
+        return x->first;
     }
 
     std::string countLength() {
         std::string route;
 
-        double biggestpath = -1;
+        double biggestPath = -1;
 
         for (const auto &i : vec) {
             std::vector<bool> used(i.second.size(), false);
@@ -34,23 +35,23 @@ struct Vehicle {
             double p = 0;
 
             while (counter != i.second.size()) {
-                double mpath = 1000000;
-                int mcur = 0;
+                double maxPath = 1000000;
+                int maxCur = 0;
                 for (int j = 0; j < i.second.size(); j++) {
                     double path = sqrt(pow(i.second[cur].first - i.second[j].first, 2)
                                        + pow(i.second[cur].second - i.second[j].second, 2));
-                    if (path < mpath && path != 0 && !used[j]) {
-                        mpath = path;
-                        mcur = j;
+                    if (path < maxPath && path != 0 && !used[j]) {
+                        maxPath = path;
+                        maxCur = j;
                     }
                 }
-                p += mpath;
+                p += maxPath;
                 counter++;
-                used[mcur] = true;
+                used[maxCur] = true;
             }
 
-            if (p > biggestpath) {
-                biggestpath = p;
+            if (p > biggestPath) {
+                biggestPath = p;
                 route = i.first;
             }
         }
@@ -82,7 +83,7 @@ int main() {
         std::string streets = tool.child("location").first_child().value();
         std::pair<float, float> coords;
 
-        int pos = 0;
+        int pos;
         while ((pos = streets.find(delimiter)) != std::string::npos) {
             token = streets.substr(0, pos);
             streets.erase(0, pos + delimiter.length());
@@ -95,7 +96,6 @@ int main() {
 
         for (auto &i : routes_list) if (i == '.') i = ',';
 
-        pos = 0;
         while ((pos = coords_string.find(delimiter)) != std::string::npos) {
             token = coords_string.substr(0, pos);
             coords_string.erase(0, pos + delimiter.length());
@@ -103,7 +103,6 @@ int main() {
             coords.second = std::stof(coords_string);
         }
 
-        pos = 0;
         while ((pos = routes_list.find(delimiter)) != std::string::npos) {
             token = routes_list.substr(0, pos);
             if (vehicle == "Автобус") {
@@ -118,20 +117,17 @@ int main() {
     }
 
     std::cout << "Max bus stops : " << bus.countStops() << "\nMax tram stops : " << tram.countStops()
-              << "\nMax trolleybus stops " << trolleybus.countStops() << "\n";
-    std::cout << bus.countLength() << " " << tram.countLength() << " " << trolleybus.countLength() << "\n";
+              << "\nMax trolleybus stops : " << trolleybus.countStops() << "\n";
+    std::cout << "Longest bus route" << bus.countLength() << "\nLongest tram route " << tram.countLength()
+              << "\nLongest trolleybus route " << trolleybus.countLength() << "\n";
 
-    std::string famousStreet;
-    int bestStop = 0;
+    auto famousStreet = std::max_element(streetsFrequency.begin(), streetsFrequency.end(),
+                                         [](const std::pair<std::string, int> &p1,
+                                            const std::pair<std::string, int> &p2) {
+                                             return p1.second < p2.second;
+                                         });
 
-    for (const auto &i : streetsFrequency) { // max_element
-        if (i.second > bestStop) {
-            famousStreet = i.first;
-            bestStop = i.second;
-        }
-    }
-
-    std::cout << famousStreet << " " << bestStop << " stops";
+    std::cout << "Most famous street: " << famousStreet->first << " " << famousStreet->second << " stops";
 
     return 0;
 }
