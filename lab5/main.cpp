@@ -1,85 +1,117 @@
-// Шаблон кольцевого буфера
-// принимает два параметра:
-// размер буфера - должен быть степенью двойки,
-// тип элементов хранящихся в буфере, по умолчанию unsigned char
-template<int SIZE, class DATA_T=unsigned char>
-class RingBuffer
-{
-public:
-// определяем псевдоним для индексов 
-    typedef uint16_t INDEX_T;
+#include <memory>
+#include <iostream>
+
+template<class T>
+class Circular_Buffer {
 private:
-// память под буфер
-    DATA_T _data[SIZE];
-// количество чтений
-    volatile INDEX_T _readCount;
-// количество записей
-    volatile INDEX_T _writeCount;
-// маска для индексов
-    static const INDEX_T _mask = SIZE - 1;
+    std::unique_ptr<T[]> buffer;
+
+    size_t head = 0;
+    size_t tail = 0;
+    size_t cur_size = 0;
+    T empty_item;
 public:
-// запись в буфер, возвращает true если значение записано
-    inline bool Write(DATA_T value)
-    {
-        if(IsFull())
-            return false;
-        _data[_writeCount++ & _mask] = value;
-        return true;
-    }
-// чтение из буфера, возвращает true если значение прочитано
-    inline bool Read(DATA_T &value)
-    {
-        if(IsEmpty())
-            return false;
-        value = _data[_readCount++ & _mask];
-        return true;
-    }
-// возвращает первый элемент из буфера, не удаляя его
-    inline DATA_T First()const
-    {
-        return operator[](0);
-    }
-// возвращает последний элемент из буфера, не удаляя его
-    inline DATA_T Last()const
-    {
-        return operator[](Count());
-    }
-// возвращает элемент по индексу
-    inline DATA_T& operator[] (INDEX_T i)
-    {
-        if(IsEmpty() || i > Count())
-            return DATA_T();
-        return _data[(_readCount + i) & _mask];
+    explicit Circular_Buffer<T>(size_t size)
+            : buffer(std::unique_ptr<T[]>(new T[size])), cur_size(size) {};
+
+    void push_back(T item) {
+        buffer = level_up(buffer, 1);
+        cur_size++;
+
+        buffer[tail] = item;
+
+        tail++;
     }
 
-    inline const DATA_T operator[] (INDEX_T i)const
-    {
-        if(IsEmpty())
-            return DATA_T();
-        return _data[(_readCount + i) & _mask];
+    void push_front(T item) {
+        buffer = level_down(buffer, 1);
+
+        buffer[head] = item;
+
+        cur_size++;
+        tail++;
     }
-// пуст ли буфер
-    inline bool IsEmpty()const
-    {
-        return _writeCount == _readCount;
+
+    void resize(size_t length) {
+        if (cur_size < length) {
+            buffer = level_up(buffer, length - cur_size);
+        } else {
+            while (cur_size > length) {
+                pop_back();
+            }
+        }
+        cur_size = length;
     }
-// полон ли буфер
-    inline bool IsFull()const
-    {
-        return ((INDEX_T)(_writeCount - _readCount) & (INDEX_T)~(_mask)) != 0;
+
+    std::unique_ptr<T[]> level_up(std::unique_ptr<T[]> &arr, size_t length) {
+        std::unique_ptr<T[]> new_buffer(new T[cur_size + length]);
+        for (int i = 0; i < cur_size; i++) {
+            new_buffer[i] = arr[i];
+        }
+        return new_buffer;
     }
-// количество элементов в буфере
-    INDEX_T Count()const
-    {
-        return (_writeCount - _readCount) & _mask;
+
+    std::unique_ptr<T[]> level_down(std::unique_ptr<T[]> &arr, size_t length) {
+        std::unique_ptr<T[]> new_buffer(new T[cur_size + length]);
+        for (int i = 1; i < cur_size + 1; i++)
+            new_buffer[i] = arr[i - 1];
+        return new_buffer;
     }
-// очистить буфер
-    inline void Clear()
-    {
-        _readCount=0;
-        _writeCount=0;
+
+    void pop_front() {
+
+        if (is_empty())
+            throw std::runtime_error("buffer is empty");
+
+        buffer[head] = empty_item;
+
+        cur_size--;
+        head++;
     }
-// размер буфера
-    inline unsigned Size()
-    {return SIZE;}
+
+    void pop_back() {
+
+        if (is_empty())
+            throw std::runtime_error("buffer is empty");
+
+        buffer[tail - 1] = empty_item;
+
+        cur_size--;
+        tail--;
+    }
+
+    T front() { return buffer[head]; }
+
+    T back() { return buffer[tail - 1]; }
+
+    bool is_empty() { return head == tail; }
+
+    bool is_full() { return head + 1 == tail; }
+
+    size_t size() {
+        return cur_size;
+    }
+
+    T operator[](size_t number) {
+        return buffer[head + number];
+    }
 };
+
+int main() {
+    Circular_Buffer<uint32_t> cb(1);
+    cb.push_back(1);
+    cb.push_back(2);
+    cb.push_back(3);
+    cb.push_front(4);
+    cb.pop_front();
+
+    std::cout << cb.size() << std::endl;
+
+    cb.resize(10);
+
+    for (int i = 0; i < cb.size(); i++) {
+        std::cout << cb[i] << " ";
+    }
+
+    std::cout << cb.size() << std::endl;
+}

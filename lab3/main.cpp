@@ -35,19 +35,19 @@ struct Vehicle {
             double p = 0;
 
             while (counter != i.second.size()) {
-                double maxPath = 1000000;
-                int maxCur = 0;
+                double minPath = 1000000;
+                int minCur = 0;
                 for (int j = 0; j < i.second.size(); j++) {
                     double path = sqrt(pow(i.second[cur].first - i.second[j].first, 2)
                                        + pow(i.second[cur].second - i.second[j].second, 2));
-                    if (path < maxPath && path != 0 && !used[j]) {
-                        maxPath = path;
-                        maxCur = j;
+                    if (path < minPath && path != 0 && !used[j]) {
+                        minPath = path;
+                        minCur = j;
                     }
                 }
-                p += maxPath;
+                p += minPath;
                 counter++;
-                used[maxCur] = true;
+                used[minCur] = true;
             }
 
             if (p > biggestPath) {
