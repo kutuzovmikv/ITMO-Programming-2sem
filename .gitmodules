@@ -1,0 +1,6 @@
+[submodule "lab6/glfw"]
+	path = lab6/glfw
+	url = https://github.com/glfw/glfw
+[submodule "lab6/glm"]
+	path = lab6/glm
+	url = https://github.com/Groovounet/glm

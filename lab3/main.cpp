@@ -83,7 +83,7 @@ int main() {
         std::string streets = tool.child("location").first_child().value();
         std::pair<float, float> coords;
 
-        int pos;
+        unsigned pos;
         while ((pos = streets.find(delimiter)) != std::string::npos) {
             token = streets.substr(0, pos);
             streets.erase(0, pos + delimiter.length());
