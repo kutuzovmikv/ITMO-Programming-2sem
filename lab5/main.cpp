@@ -1,117 +1,126 @@
 #include <memory>
 #include <iostream>
 
-template<class T>
-class Circular_Buffer {
+template<class T, typename Alloc = std::allocator<T>>
+class circular_buffer {
 private:
-    std::unique_ptr<T[]> buffer;
-
-    size_t head = 0;
-    size_t tail = 0;
-    size_t cur_size = 0;
-    T empty_item;
+    T *buf_;
+    Alloc alloc_;
+    size_t capacity_ = 10;
+    size_t head_ = 0;
+    size_t tail_ = 0;
+    bool full_ = false;
 public:
-    explicit Circular_Buffer<T>(size_t size)
-            : buffer(std::unique_ptr<T[]>(new T[size])), cur_size(size) {};
+    circular_buffer() {
+        buf_ = alloc_.allocate(capacity_);
+    }
 
-    void push_back(T item) {
-        buffer = level_up(buffer, 1);
-        cur_size++;
+    explicit circular_buffer(size_t size) : capacity_{size * 3 / 2} {
+        buf_ = alloc_.allocate(capacity_);
+    }
 
-        buffer[tail] = item;
-
-        tail++;
+    ~circular_buffer() {
+        for (auto it = buf_; it != buf_ + size(); ++it)
+            alloc_.destroy(it);
+        alloc_.deallocate(buf_, capacity_);
     }
 
     void push_front(T item) {
-        buffer = level_down(buffer, 1);
+        buf_[head_] = item;
 
-        buffer[head] = item;
-
-        cur_size++;
-        tail++;
-    }
-
-    void resize(size_t length) {
-        if (cur_size < length) {
-            buffer = level_up(buffer, length - cur_size);
-        } else {
-            while (cur_size > length) {
-                pop_back();
-            }
+        if (full_) {
+            tail_ = (tail_ + 1) % capacity_;
         }
-        cur_size = length;
+
+        head_ = (head_ + 1) % capacity_;
+
+        full_ = head_ == tail_;
     }
 
-    std::unique_ptr<T[]> level_up(std::unique_ptr<T[]> &arr, size_t length) {
-        std::unique_ptr<T[]> new_buffer(new T[cur_size + length]);
-        for (int i = 0; i < cur_size; i++) {
-            new_buffer[i] = arr[i];
+    void push_back(T item) {
+        buf_[tail_] = item;
+
+        if (full_) {
+            head_ = (head_ - 1) % capacity_;
         }
-        return new_buffer;
-    }
 
-    std::unique_ptr<T[]> level_down(std::unique_ptr<T[]> &arr, size_t length) {
-        std::unique_ptr<T[]> new_buffer(new T[cur_size + length]);
-        for (int i = 1; i < cur_size + 1; i++)
-            new_buffer[i] = arr[i - 1];
-        return new_buffer;
-    }
+        tail_ = (tail_ - 1) % capacity_;
 
-    void pop_front() {
-
-        if (is_empty())
-            throw std::runtime_error("buffer is empty");
-
-        buffer[head] = empty_item;
-
-        cur_size--;
-        head++;
+        full_ = head_ == tail_;
     }
 
     void pop_back() {
+        if (!empty()) {
+            alloc_.destroy(buf_ + tail_);
 
-        if (is_empty())
-            throw std::runtime_error("buffer is empty");
-
-        buffer[tail - 1] = empty_item;
-
-        cur_size--;
-        tail--;
+            tail_ = (tail_ + 1) % capacity_;
+        }
     }
 
-    T front() { return buffer[head]; }
+    void pop_front() {
+        if (!empty()) {
+            alloc_.destroy(buf_ + head_);
 
-    T back() { return buffer[tail - 1]; }
-
-    bool is_empty() { return head == tail; }
-
-    bool is_full() { return head + 1 == tail; }
-
-    size_t size() {
-        return cur_size;
+            head_ = (head_ - 1) % capacity_;
+        }
     }
 
-    T operator[](size_t number) {
-        return buffer[head + number];
+    void resize(size_t length) {
+        T *new_buf = alloc_.allocate(length);
+
+        size_t lim;
+        if (length < size()) {
+            lim = length;
+        } else {
+            lim = size();
+        }
+
+        for (int i = 0; i < lim; i++) {
+            new_buf[i] = buf_[i];
+        }
+
+        for (auto it = buf_; it != buf_ + size(); ++it)
+            alloc_.destroy(it);
+        alloc_.deallocate(buf_, capacity_);
+
+        buf_ = new_buf;
+    }
+
+    bool empty() const {
+        return (!full_ && (head_ == tail_));
+    }
+
+    bool full() const {
+        return full_;
+    }
+
+    size_t capacity() const {
+        return capacity_;
+    }
+
+    size_t size() const {
+        size_t size = capacity_;
+
+        if (!full_) {
+            if (head_ >= tail_) {
+                size = head_ - tail_;
+            } else {
+                size = capacity_ + head_ - tail_;
+            }
+        }
+
+        return size;
+    }
+
+    T front() const {
+        return buf_[head_];
+    }
+
+    T back() const {
+        return buf_[tail_];
+    }
+
+    T operator[](size_t number) const {
+        return buf_[(tail_ + number) % capacity_];
     }
 };
-
-int main() {
-    Circular_Buffer<uint32_t> cb(1);
-    cb.push_back(1);
-    cb.push_back(2);
-    cb.push_back(3);
-    cb.push_front(4);
-    cb.pop_front();
-
-    std::cout << cb.size() << std::endl;
-
-    cb.resize(10);
-
-    for (int i = 0; i < cb.size(); i++) {
-        std::cout << cb[i] << " ";
-    }
-
-    std::cout << cb.size() << std::endl;
-}
