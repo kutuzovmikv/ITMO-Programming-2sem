@@ -1,302 +1,249 @@
-#include <memory>
-#include <iostream>
 #include <algorithm>
-
-template<class T>
-class circular_buffer_iterator
-        : public std::iterator<std::random_access_iterator_tag, T> {
-public:
-    explicit circular_buffer_iterator(T *p, size_t pos, size_t capacity) : ptr_(p), pos_(pos), capacity_(capacity) {}
-
-    circular_buffer_iterator(const circular_buffer_iterator<T> &it) : ptr_(it.ptr_), pos_(it.pos_),
-                                                                      capacity_(it.capacity_) {}
-
-    inline bool operator!=(const circular_buffer_iterator<T> &it) {
-        return ptr_ + pos_ != it.ptr_ + it.pos_;
-    }
-
-    inline circular_buffer_iterator<T> &operator++() {
-        pos_ = (pos_ + 1) % capacity_;
-        return *this;
-    }
-
-    inline T &operator*() const {
-        return *(ptr_ + pos_);
-    }
-
-    inline T* operator -> () const {
-        return *(ptr_ + pos_);
-    }
-
-    inline circular_buffer_iterator<T>& operator = (const T& value) {
-        ptr_ = *value;
-        return *this;
-    }
-
-    inline circular_buffer_iterator<T>& operator = (T* ptr) {
-        ptr_ = ptr;
-        return *this;
-    }
-
-    inline circular_buffer_iterator<T>& operator = (const circular_buffer_iterator<T>& it) {
-        ptr_ = it.ptr_;
-        capacity_ = it.capacity_;
-        pos_ = it.pos_;
-        return *this;
-    }
-
-private:
-    T *ptr_;
-    size_t capacity_;
-    size_t pos_;
-};
-
+#include <iostream>
+#include <initializer_list>
+#include <algorithm>
 
 template<class T, class Allocator = std::allocator<T>>
 class circular_buffer {
-private:
-    T *buf_;
-    Allocator alloc_;
-    using traits_ = std::allocator_traits<decltype(alloc_)>;
-    size_t capacity_ = 10;
-    size_t start_ = 0;
-    size_t end_ = 1;
-    bool full_ = false;
-    bool empty_ = true;
 public:
-    friend class circular_buffer_iterator<T>;
+    class iterator : public std::iterator<std::random_access_iterator_tag, T> {
+    public:
+        using difference_type = typename std::iterator<std::random_access_iterator_tag, T>::difference_type;
 
-    typedef circular_buffer_iterator<T> iterator;
-    typedef circular_buffer_iterator<const T> const_iterator;
-
-    circular_buffer() {
-        buf_ = traits_::allocate(alloc_, capacity_);
-    }
-
-    explicit circular_buffer(size_t size) : capacity_{size} {
-        if (size < 2)
-            throw;
-        buf_ = traits_::allocate(alloc_, capacity_);
-    }
-
-    ~circular_buffer() {
-        for (auto it = buf_; it != buf_ + capacity_; ++it)
-            traits_::destroy(alloc_, it);
-        traits_::deallocate(alloc_, buf_, capacity_);
-    }
-
-    void push_front(const T &item) {
-
-        if (empty()) {
-            traits_::construct(alloc_, buf_ + start_, item);
-            empty_ = false;
-            return;
+        difference_type operator-(const iterator &obj) const {
+            return _data - obj._data;
         }
 
-        empty_ = false;
-        start_ = (start_ - 1) % capacity_;
-
-        traits_::construct(alloc_, buf_ + start_, item);
-
-        if (full_) {
-            end_ = (end_ + 1) % capacity_;
+        explicit iterator(T *start) {
+            _data = start;
         }
 
-        full_ = start_ == end_;
-    }
-
-    void push_back(const T &item) {
-        empty_ = false;
-        traits_::construct(alloc_, buf_ + end_, item);
-
-        if (full_) {
-            start_ = (start_ + 1) % capacity_;
+        iterator(const iterator &obj) {
+            _data = obj._data;
         }
 
-        end_ = (end_ + 1) % capacity_;
+        ~iterator() = default;
 
-        full_ = start_ == end_;
-    }
-
-    void pop_back() {
-        if (empty()) {
-            return;
+        T &operator*() const{
+            return *(_data);
         }
 
-        traits_::destroy(alloc_, buf_ + end_);
-
-
-        if (start_ == end_)
-            start_ = (start_ + 1) % capacity_;
-
-        end_ = (end_ - 1) % capacity_;
-
-
-        full_ = false;
-    }
-
-    void pop_front() {
-        if (empty()) {
-            return;
+        T *operator->() const{
+            return _data;
         }
 
-        traits_::destroy(alloc_, buf_ + start_);
-
-        if (start_ == end_) {
-            end_ = (end_ - 1) % capacity_;
+        iterator operator++() {
+            ++_data;
+            return *this;
         }
 
-        start_ = (start_ + 1) % capacity_;
-
-        full_ = false;
-    }
-
-    void resize(const size_t &length) {
-        // если меньше - задестроить элементы за размером, такой же ниче, если больше - добавляем дефолт, либо впихиваем больше
-
-        if (length < capacity_) {
-
-            for (auto it = buf_ + length; it != buf_ + capacity_; ++it)
-                traits_::destroy(alloc_, it);
-
-            capacity_ = length;
-            if (start_ > length)
-                start_ -= length;
-            if (end_ > length)
-                end_ -= length;
-
-        } else if (length > capacity_) {
-            empty_ = true;
-
-            T *new_buf = traits_::allocate(alloc_, length);
-            for (auto it = buf_; it != buf_ + capacity_; ++it)
-                traits_::construct(alloc_, new_buf, *it);
-
-            for (auto it = buf_; it != buf_ + capacity_; ++it)
-                traits_::destroy(alloc_, it);
-            traits_::deallocate(alloc_, buf_, capacity_);
-
-            buf_ = new_buf;
-        }
-    }
-
-    void resize(const size_t &length, const T &value) {
-        // если меньше - задестроить элементы за размером, такой же ниче, если больше - добавляем дефолт, либо впихиваем больше
-
-        if (length < capacity_) {
-
-            for (auto it = buf_ + length; it != buf_ + capacity_; ++it)
-                traits_::destroy(alloc_, it);
-
-            if (start_ > length)
-                start_ -= length;
-            if (end_ > length)
-                end_ -= length;
-
-        } else if (length > capacity_) {
-            empty_ = false;
-            T *new_buf = traits_::allocate(alloc_, length);
-            for (auto it = buf_; it != buf_ + capacity_; ++it)
-                traits_::construct(alloc_, new_buf, *it);
-            for (auto it = buf_ + capacity_; it != buf_ + length; ++it)
-                traits_::construct(alloc_, new_buf, value);
-
-            for (auto it = buf_; it != buf_ + capacity_; ++it)
-                traits_::destroy(alloc_, it);
-            traits_::deallocate(alloc_, buf_, capacity_);
-
-            buf_ = new_buf;
+        iterator operator--() {
+            --_data;
+            return *this;
         }
 
-        capacity_ = length;
-    }
-
-    void reserve(const size_t &length) {
-        if (length > capacity_) {
-            empty_ = true;
-            capacity_ = length;
-
-            T *new_buf = traits_::allocate(alloc_, length);
-            for (auto it = buf_; it != buf_ + capacity_; ++it)
-                traits_::construct(alloc_, new_buf, *it);
-
-            for (auto it = buf_; it != buf_ + capacity_; ++it)
-                traits_::destroy(alloc_, it);
-            traits_::deallocate(alloc_, buf_, capacity_);
-
-            buf_ = new_buf;
+        iterator operator+(int value) {
+            _data = _data + value;
+            return *this;
         }
+
+        iterator operator-(int value) {
+            _data = _data - value;
+            return *this;
+        }
+
+        bool operator==(const iterator &it) const {
+            return _data == it._data;
+        }
+
+        bool operator!=(const iterator &it) const {
+            return _data != it._data;
+        }
+
+        bool operator<(const iterator &it) const {
+            return _data < it._data;
+        }
+
+        bool operator<=(const iterator &it) const {
+            return _data <= it._data;
+        }
+
+        bool operator>(const iterator &it) const {
+            return _data > it._data;
+        }
+
+        bool operator>=(const iterator &it) const {
+            return _data >= it._data;
+        }
+
+    private:
+        T *_data = nullptr;
+    };
+
+    [[nodiscard]] iterator begin() const {
+        return iterator(_data);
     }
 
-    [[nodiscard]] bool empty() const {
-        return empty_;
-    }
-
-    [[nodiscard]] bool full() const {
-        return full_;
+    [[nodiscard]] iterator end() const {
+        return iterator(_data + _size);
     }
 
     [[nodiscard]] size_t capacity() const {
-        return capacity_;
+        return this->_capacity;
     }
 
     [[nodiscard]] size_t size() const {
-        size_t size = capacity_;
+        return this->_size;
+    }
 
-        if (!full_) {
-            if (end_ >= start_) {
-                size = end_ - start_;
-            } else {
-                size = capacity_ + end_ - start_;
+    explicit circular_buffer(const size_t &capacity) : _capacity(capacity) {
+        _data = traits_::allocate(alloc_, _capacity);
+    }
+
+    circular_buffer(const circular_buffer &buffer)
+            : _size(buffer._size),
+              _capacity(buffer._capacity),
+              _data(buffer._data), alloc_(buffer.alloc_) {};
+
+    ~circular_buffer() {
+        for (auto it = _data; it != _data + _capacity; ++it)
+            traits_::destroy(alloc_, it);
+        traits_::deallocate(alloc_, _data, _capacity);
+    }
+
+    void push_front(const T &value) {
+        if (_size < _capacity) {
+            for (size_t i = _size; i >= 1; i--)
+                traits_::construct(alloc_, _data + i, *(_data + i - 1));
+            traits_::construct(alloc_, _data, value);
+            _size++;
+        } else {
+            for (size_t i = _capacity - 1; i >= 1; i--)
+                traits_::construct(alloc_, _data + i, *(_data + i - 1));
+            traits_::construct(alloc_, _data, value);
+        }
+    }
+
+    void pop_front() {
+        for (size_t i = 0; i < _size - 1; i++)
+            traits_::construct(alloc_, _data + i, *(_data + i + 1));
+        _size--;
+    }
+
+    void push_back(const T &value) {
+        if (_size < _capacity) {
+            traits_::construct(alloc_, _data + _size, value);
+            _size++;
+        } else {
+            for (size_t i = 1; i < _capacity; i++)
+                traits_::construct(alloc_, _data + i - 1, *(_data + i));
+            traits_::construct(alloc_, _data + _capacity - 1, value);
+        }
+    }
+
+    void pop_back() {
+        if (_size > 0)
+            _size--;
+    }
+
+    void insert(const size_t &it, const T &value) {
+        traits_::construct(alloc_, _data + (it % _capacity), value);
+    }
+
+    void insert(iterator it, const T &value) {
+        *(begin() + (it - begin()) % _size) = value;
+    }
+
+    void remove(const size_t &it) {
+        for (size_t i = it + 1; i < _size; i++)
+            traits_::construct(alloc_, _data + (i - 1) % _capacity, *(_data + (i % _capacity)));
+        _size--;
+    }
+
+    void resize(const size_t &new_capacity) {
+        if (new_capacity < _capacity) {
+
+            for (auto it = _data + new_capacity; it != _data + _capacity; ++it)
+                traits_::destroy(alloc_, it);
+
+            _capacity = new_capacity;
+
+            if (_size > new_capacity) {
+                _size = new_capacity;
             }
+        } else if (new_capacity > _capacity) {
+
+            T *new_data = traits_::allocate(alloc_, new_capacity);
+            for (auto it = _data; it != _data + _capacity; ++it)
+                traits_::construct(alloc_, new_data, *it);
+
+            for (auto it = _data; it != _data + _capacity; ++it)
+                traits_::destroy(alloc_, it);
+            traits_::deallocate(alloc_, _data, _capacity);
+
+            _data = new_data;
+        }
+    }
+
+    void resize(const size_t &new_capacity, const T &value) {
+        // если меньше - задестроить элементы за размером, такой же ниче, если больше - добавляем дефолт, либо впихиваем больше
+
+        if (new_capacity < _capacity) {
+
+            for (auto it = _data + new_capacity; it != _data + _capacity; ++it)
+                traits_::destroy(alloc_, it);
+
+            if (_size > new_capacity) {
+                _size = new_capacity;
+            }
+        } else if (new_capacity > _capacity) {
+
+            T *new_data = traits_::allocate(alloc_, new_capacity);
+            for (auto it = _data; it != _data + _capacity; ++it)
+                traits_::construct(alloc_, new_data, *it);
+            for (auto it = _data + _capacity; it != _data + new_capacity; ++it)
+                traits_::construct(alloc_, new_data, value);
+
+            for (auto it = _data; it != _data + _capacity; ++it)
+                traits_::destroy(alloc_, it);
+            traits_::deallocate(alloc_, _data, _capacity);
+
+            _size = new_capacity;
+            _data = new_data;
         }
 
-        return size;
+        _capacity = new_capacity;
     }
 
-    [[nodiscard]] T front() const {
-        return buf_[start_];
+    T operator[](size_t it) {
+        return _data[it % _capacity];
     }
 
-    [[nodiscard]] T back() const {
-        if (full_)
-            return buf_[end_];
-        else
-            return buf_[end_ - 1];
-    }
-
-    T operator[](const size_t &number) const {
-        return buf_[(start_ + number) % capacity_];
-    }
-
-    iterator begin() {
-        if (start_ == end_)
-            return iterator(buf_, (start_ + 1) % capacity_, capacity_);
-        return iterator(buf_, start_, capacity_);
-    }
-
-    iterator end() {
-        return iterator(buf_, end_, capacity_);
-    }
-
-    [[nodiscard]] const_iterator begin() const {
-        return const_iterator(buf_, start_, capacity_);
-    }
-
-    [[nodiscard]] const_iterator end() const {
-        return const_iterator(buf_, start_, capacity_);
-    }
+private:
+    size_t _size = 0;
+    size_t _capacity = 0;
+    T *_data = nullptr;
+    Allocator alloc_;
+    using traits_ = std::allocator_traits<decltype(alloc_)>;
 };
 
-int main() {
-    circular_buffer<int> buffer(4);
-    buffer.push_front(1);
-    buffer.push_front(2);
-    buffer.push_back(3);
-    buffer.push_back(4);
-    buffer.resize(2);
+template<class T>
+void info(const circular_buffer<T> &v) {
+    std::cout << "Capacity: " << v.capacity() << "\n";
+    std::cout << "Size: " << v.size() << "\n";
+    std::cout << "Items: ";
+    for (const auto &it : v)
+        std::cout << it << ' ';
+    std::cout << "\n";
+}
 
-    for (const auto &it : buffer) {
-        std::cout << it << " ";
-    }
+int main() {
+    circular_buffer<int> test(3);
+    test.push_front(5);
+    test.push_back(1);
+    test.push_back(24);
+    test.pop_front();
+    std::sort(test.begin(), test.end());
+    info(test);
+    return 0;
 }
