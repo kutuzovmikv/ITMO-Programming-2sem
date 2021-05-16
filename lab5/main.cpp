@@ -9,7 +9,7 @@ public:
 
     class iterator : public std::iterator<std::random_access_iterator_tag, T> {
     public:
-        explicit iterator(T *start, const size_t &pos) : iter_(start), pos_(pos) {};
+        explicit iterator(T *start, const size_t &pos, const size_t &cap) : iter_(start), pos_(pos), cap_(cap) {};
 
         ~iterator() = default;
 
@@ -18,29 +18,29 @@ public:
         }
 
         iterator operator++() {
-            ++pos_;
+            pos_ = (pos_ + 1) % cap_;
             return *this;
         }
 
         iterator operator--() {
-            --pos_;
+            pos_ = (pos_ - 1) % cap_;
             return *this;
         }
 
         iterator operator+(int value) {
-            pos_ += value;
+            pos_ = (pos_ + value) % cap_;
             return *this;
         }
 
         iterator operator-(int value) {
-            pos_ -= value;
+            pos_ = (pos_ - value) % cap_;
             return *this;
         }
 
         using difference_type = typename std::iterator<std::random_access_iterator_tag, T>::difference_type;
 
         difference_type operator-(const iterator &obj) const {
-            return pos_ - obj.pos_;
+            return (pos_ - obj.pos_) % cap_;
         }
 
         bool operator==(const iterator &it) const {
@@ -70,25 +70,26 @@ public:
     private:
         T *iter_;
         size_t pos_;
+        size_t cap_;
     };
 
     iterator begin() const {
         if (is_empty())
-            return iterator(data_, front_ + 1);
-        return iterator(data_, front_);
+            return iterator(data_, front_ + 1, capacity_);
+        return iterator(data_, front_, capacity_);
     }
 
     iterator start() {
         if (is_empty()) {
             front_++;
             rear_++;
-            return iterator(data_, front_);
+            return iterator(data_, front_, capacity_);
         }
-        return iterator(data_, 0);
+        return iterator(data_, 0, capacity_);
     }
 
     iterator end() const {
-        return iterator(data_, (rear_ + 1) % capacity_);
+        return iterator(data_, (rear_ + 1) % capacity_, capacity_);
     }
 
     // добавим фиктивный стул, на котором нельзя сидеть
@@ -286,7 +287,7 @@ public:
 
     size_t size() const {
         if (is_full())
-            return capacity_;
+            return capacity_ - 1;
         if (is_empty())
             return 0;
 
@@ -320,20 +321,20 @@ void info(const circular_buffer<T> &v) {
 }
 
 int main() {
-    circular_buffer<int> test(5);
+    circular_buffer<int> test(3);
     test.push_back(6);
-    test.push_back(2);
-    test.push_back(3);
-    test.push_back(4);
-    test.push_back(1);
-    test.push_back(6);
-    test.push_back(228);
+    test.push_back(7);
+    test.push_back(8);
+    test.pop_front();
     info(test);
+    test.push_back(9);
+    info(test);
+
     auto it = min_element(test.begin(), test.end());
     std::cout << *it << ' ';
     it = max_element(test.begin(), test.end());
     std::cout << *it << ' ';
-    it = find(test.begin(), test.end(), 3);
+    it = find(test.begin(), test.end(), 7);
     std::cout << *it << ' ';
     test.insert(it, 24);
     info(test);
@@ -342,7 +343,5 @@ int main() {
 
     for (it = test.begin(); it != test.end(); ++it)
         std::cout << *it << ' ';
-
-
     return 0;
 }
