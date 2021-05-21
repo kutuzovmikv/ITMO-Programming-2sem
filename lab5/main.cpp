@@ -8,99 +8,91 @@ class circular_buffer {
 public:
     class const_iterator : public std::iterator<std::random_access_iterator_tag, T> {
     public:
-        explicit iterator(T
-        *start,
-        const size_t &pos,
-        const size_t &cap
-        ) :
+        explicit const_iterator(T *iter, const size_t &pos, const size_t &cap, const size_t &start) : iter_(iter),
+                                                                                                      pos_(pos),
+                                                                                                      cap_(cap),
+                                                                                                      start_(start) {};
 
-        iter_ (start), pos_(pos), cap_(cap) {};
+        ~const_iterator() = default;
 
-        ~iterator() = default;
-
-        T &operator*() const {
+        const T &operator*() const {
             return *(iter_ + pos_);
         }
 
-        iterator operator++() {
+        const_iterator operator++() {
             pos_ = (pos_ + 1) % cap_;
             return *this;
         }
 
-        iterator operator--() {
+        const_iterator operator--() {
             pos_ = (pos_ - 1) % cap_;
             return *this;
         }
 
-        iterator &operator+=(int value) {
+        const_iterator &operator+=(int value) {
             pos_ = (pos_ + value) % cap_;
             return *this;
         }
 
-        iterator &operator-=(int value) {
+        const_iterator &operator-=(int value) {
             pos_ = (pos_ - value) % cap_;
             return *this;
         }
 
-        iterator operator+(int value) const {
-            // создать итератор
-            pos_ = (pos_ + value) % cap_;
-            return *this;
+        const_iterator operator+(int value) const {
+            iterator tmp = *this;
+            tmp.pos_ = (tmp.pos_ + value) % cap_;
+            return tmp;
         }
 
-        iterator operator-(int value) const {
-            // создать итератор
-            pos_ = (pos_ - value) % cap_;
-            return *this;
+        const_iterator operator-(int value) const {
+            iterator tmp = *this;
+            tmp.pos_ = (tmp.pos_ - value) % cap_;
+            return tmp;
         }
 
         using difference_type = typename std::iterator<std::random_access_iterator_tag, T>::difference_type;
 
-        difference_type operator-(const iterator &obj) const {
+        difference_type operator-(const const_iterator &obj) const {
             return (pos_ - obj.pos_) % cap_;
         }
 
-        bool operator==(const iterator &it) const {
-            return iter_ + pos_ == it.iter_ + it.pos_;
+        bool operator==(const const_iterator &it) const {
+            return (start_ + pos_) % cap_ == (it.start_ + it.pos_) % cap_;
         }
 
-        bool operator!=(const iterator &it) const {
-            return iter_ + pos_ != it.iter_ + it.pos_;
+        bool operator!=(const const_iterator &it) const {
+            return (start_ + pos_) % cap_ != (it.start_ + it.pos_) % cap_;
         }
 
-        bool operator<(const iterator &it) const {
-            {
-                4
-                3
-                2
-                1
-            }
-            4 < 1 or 0 < 3
-            return capacity_ - pos_ < it.pos_;
+        bool operator<(const const_iterator &it) const {
+            return (start_ + pos_) % cap_ < (it.start_ + it.pos_) % cap_;
         }
 
-        bool operator<=(const iterator &it) const {
-            return iter_ + pos_ <= it.iter_ + it.pos_;
+        bool operator<=(const const_iterator &it) const {
+            return (start_ + pos_) % cap_ <= (it.start_ + it.pos_) % cap_;
         }
 
-        bool operator>(const iterator &it) const {
-            return iter_ + pos_ > it.iter_ + it.pos_;
+        bool operator>(const const_iterator &it) const {
+            return (start_ + pos_) % cap_ > (it.start_ + it.pos_) % cap_;
         }
 
-        bool operator>=(const iterator &it) const {
-            return iter_ + pos_ >= it.iter_ + it.pos_;
+        bool operator>=(const const_iterator &it) const {
+            return (start_ + pos_) % cap_ >= (it.start_ + it.pos_) % cap_;
         }
 
     private:
         T *iter_;
         size_t pos_;
         size_t cap_;
-        // их 4, чтобы ловить позицию в очереди
+        size_t start_;
     };
 
     class iterator : public std::iterator<std::random_access_iterator_tag, T> {
     public:
-        explicit iterator(T *start, const size_t &pos, const size_t &cap) : iter_(start), pos_(pos), cap_(cap) {};
+        explicit iterator(T *iter, const size_t &pos, const size_t &cap, const size_t &start) : iter_(iter),
+                                                                                                pos_(pos), cap_(cap),
+                                                                                                start_(start) {};
 
         ~iterator() = default;
 
@@ -129,15 +121,15 @@ public:
         }
 
         iterator operator+(int value) const {
-            // создать итератор
-            pos_ = (pos_ + value) % cap_;
-            return *this;
+            iterator tmp = *this;
+            tmp.pos_ = (tmp.pos_ + value) % cap_;
+            return tmp;
         }
 
         iterator operator-(int value) const {
-            // создать итератор
-            pos_ = (pos_ - value) % cap_;
-            return *this;
+            iterator tmp = *this;
+            tmp.pos_ = (tmp.pos_ - value) % cap_;
+            return tmp;
         }
 
         using difference_type = typename std::iterator<std::random_access_iterator_tag, T>::difference_type;
@@ -147,60 +139,44 @@ public:
         }
 
         bool operator==(const iterator &it) const {
-            return iter_ + pos_ == it.iter_ + it.pos_;
+            return (start_ + pos_) % cap_ == (it.start_ + it.pos_) % cap_;
         }
 
         bool operator!=(const iterator &it) const {
-            return iter_ + pos_ != it.iter_ + it.pos_;
+            return (start_ + pos_) % cap_ != (it.start_ + it.pos_) % cap_;
         }
 
         bool operator<(const iterator &it) const {
-            {
-                4
-                3
-                2
-                1
-            }
-            4 < 1 or 0 < 3
-            return capacity_ - pos_ < it.pos_;
+            return (start_ + pos_) % cap_ < (it.start_ + it.pos_) % cap_;
         }
 
         bool operator<=(const iterator &it) const {
-            return iter_ + pos_ <= it.iter_ + it.pos_;
+            return (start_ + pos_) % cap_ <= (it.start_ + it.pos_) % cap_;
         }
 
         bool operator>(const iterator &it) const {
-            return iter_ + pos_ > it.iter_ + it.pos_;
+            return (start_ + pos_) % cap_ > (it.start_ + it.pos_) % cap_;
         }
 
         bool operator>=(const iterator &it) const {
-            return iter_ + pos_ >= it.iter_ + it.pos_;
+            return (start_ + pos_) % cap_ >= (it.start_ + it.pos_) % cap_;
         }
 
     private:
         T *iter_;
         size_t pos_;
         size_t cap_;
-        // их 4, чтобы ловить позицию в очереди
+        size_t start_;
     };
 
     iterator begin() const {
         if (is_empty())
             return end();
-        return iterator(data_, front_, capacity_);
-    }
-
-    iterator start() {
-        if (is_empty()) {
-            front_++;
-            rear_++;
-            return iterator(data_, front_, capacity_);
-        }
-        return iterator(data_, 0, capacity_);
+        return iterator(data_, front_, capacity_, front_);
     }
 
     iterator end() const {
-        return iterator(data_, (rear_ + 1) % capacity_, capacity_);
+        return iterator(data_, (rear_ + 1) % capacity_, capacity_, front_);
     }
 
     // в пустом конструкторе создается 8 ячеек для буффера, 1 фиктивный
@@ -298,10 +274,6 @@ public:
 
     bool is_full() const {
         return (rear_ + 2) % capacity_ == front_;
-    }
-
-    void insert(iterator it, T value) {
-        *(start() + (it - start()) % capacity_) = value; // двигать всех
     }
 
     void reserve(size_t new_capacity) {
@@ -462,11 +434,11 @@ public:
     }
 
     T &operator[](const size_t &index) {
-        return *(data_ + index % capacity_);
+        return *(data_ + (front_ + index) % capacity_);
     }
 
     const T &operator[](const size_t &index) const {
-        return *(data_ + index % capacity_);
+        return *(data_ + (front_ + index) % capacity_);
     }
 
 private:
@@ -490,23 +462,23 @@ void info(const circular_buffer<T> &v) {
 
 int main() {
     circular_buffer<int> test(3);
-    circular_buffer<int> test1(test);
     test.push_back(6);
     test.push_back(7);
     test.push_back(8);
     test.pop_front();
+    test.pop_back();
     info(test);
     test.push_back(9);
     info(test);
 
     auto it = min_element(test.begin(), test.end());
     std::cout << *it << ' ';
+
     it = max_element(test.begin(), test.end());
     std::cout << *it << ' ';
+
     it = find(test.begin(), test.end(), 7);
     std::cout << *it << ' ';
-    test.insert(it, 24);
-    info(test);
 
     std::reverse(test.begin(), test.end());
 
