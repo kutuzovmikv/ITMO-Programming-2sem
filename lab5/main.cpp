@@ -139,27 +139,27 @@ public:
         }
 
         bool operator==(const iterator &it) const {
-            return (start_ + pos_) % cap_ == (it.start_ + it.pos_) % cap_;
+            return start_ + pos_ == it.start_ + it.pos_;
         }
 
         bool operator!=(const iterator &it) const {
-            return (start_ + pos_) % cap_ != (it.start_ + it.pos_) % cap_;
+            return start_ + pos_ != it.start_ + it.pos_;
         }
 
         bool operator<(const iterator &it) const {
-            return (start_ + pos_) % cap_ < (it.start_ + it.pos_) % cap_;
+            return start_ + pos_ < it.start_ + it.pos_;
         }
 
         bool operator<=(const iterator &it) const {
-            return (start_ + pos_) % cap_ <= (it.start_ + it.pos_) % cap_;
+            return start_ + pos_ <= it.start_ + it.pos_;
         }
 
         bool operator>(const iterator &it) const {
-            return (start_ + pos_) % cap_ > (it.start_ + it.pos_) % cap_;
+            return start_ + pos_ > it.start_ + it.pos_;
         }
 
         bool operator>=(const iterator &it) const {
-            return (start_ + pos_) % cap_ >= (it.start_ + it.pos_) % cap_;
+            return start_ + pos_ >= it.start_ + it.pos_;
         }
 
     private:
@@ -465,8 +465,6 @@ int main() {
     test.push_back(6);
     test.push_back(7);
     test.push_back(8);
-    test.pop_front();
-    test.pop_back();
     info(test);
     test.push_back(9);
     info(test);
