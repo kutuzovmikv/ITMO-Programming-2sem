@@ -13,10 +13,11 @@ public:
                                                                                                       cap_(cap),
                                                                                                       start_(start) {};
 
+
         ~const_iterator() = default;
 
         const T &operator*() const {
-            return *(iter_ + pos_);
+            return *(iter_ + (start_ + pos_) % cap_);
         }
 
         const_iterator operator++() {
@@ -58,27 +59,27 @@ public:
         }
 
         bool operator==(const const_iterator &it) const {
-            return (start_ + pos_) % cap_ == (it.start_ + it.pos_) % cap_;
+            return pos_ == it.pos_;
         }
 
         bool operator!=(const const_iterator &it) const {
-            return (start_ + pos_) % cap_ != (it.start_ + it.pos_) % cap_;
+            return pos_ != it.pos_;
         }
 
         bool operator<(const const_iterator &it) const {
-            return (start_ + pos_) % cap_ < (it.start_ + it.pos_) % cap_;
+            return pos_ < it.pos_;
         }
 
         bool operator<=(const const_iterator &it) const {
-            return (start_ + pos_) % cap_ <= (it.start_ + it.pos_) % cap_;
+            return pos_ <= it.pos_;
         }
 
         bool operator>(const const_iterator &it) const {
-            return (start_ + pos_) % cap_ > (it.start_ + it.pos_) % cap_;
+            return pos_ > it.pos_;
         }
 
         bool operator>=(const const_iterator &it) const {
-            return (start_ + pos_) % cap_ >= (it.start_ + it.pos_) % cap_;
+            return pos_ >= it.pos_;
         }
 
     private:
@@ -97,7 +98,7 @@ public:
         ~iterator() = default;
 
         T &operator*() const {
-            return *(iter_ + pos_);
+            return *(iter_ + (start_ + pos_) % cap_);
         }
 
         iterator operator++() {
@@ -139,27 +140,27 @@ public:
         }
 
         bool operator==(const iterator &it) const {
-            return start_ + pos_ == it.start_ + it.pos_;
+            return pos_ == it.pos_;
         }
 
         bool operator!=(const iterator &it) const {
-            return start_ + pos_ != it.start_ + it.pos_;
+            return pos_ != it.pos_;
         }
 
         bool operator<(const iterator &it) const {
-            return start_ + pos_ < it.start_ + it.pos_;
+            return pos_ < it.pos_;
         }
 
         bool operator<=(const iterator &it) const {
-            return start_ + pos_ <= it.start_ + it.pos_;
+            return pos_ <= it.pos_;
         }
 
         bool operator>(const iterator &it) const {
-            return start_ + pos_ > it.start_ + it.pos_;
+            return pos_ > it.pos_;
         }
 
         bool operator>=(const iterator &it) const {
-            return start_ + pos_ >= it.start_ + it.pos_;
+            return pos_ >= it.pos_;
         }
 
     private:
@@ -169,14 +170,24 @@ public:
         size_t start_;
     };
 
-    iterator begin() const {
+    iterator begin() {
         if (is_empty())
             return end();
-        return iterator(data_, front_, capacity_, front_);
+        return iterator(data_, 0, capacity_, front_);
     }
 
-    iterator end() const {
-        return iterator(data_, (rear_ + 1) % capacity_, capacity_, front_);
+    const_iterator begin() const {
+        if (is_empty())
+            return end();
+        return const_iterator(data_, 0, capacity_, front_);
+    }
+
+    iterator end() {
+        return iterator(data_, size(), capacity_, front_);
+    }
+
+    const_iterator end() const {
+        return const_iterator(data_, size(), capacity_, front_);
     }
 
     // в пустом конструкторе создается 8 ячеек для буффера, 1 фиктивный
@@ -198,6 +209,14 @@ public:
     circular_buffer(const circular_buffer &buffer) : capacity_(buffer.capacity_), front_(buffer.front_),
                                                      rear_(buffer.rear_) {
         T *new_data = traits_::allocate(alloc_, capacity_);
+
+        int i = 0;
+        int j = front_;
+        while (j != (rear_ + 1) % capacity_) {
+            traits_::construct(alloc_, new_data + i++, *(buffer.data_ + j));
+            j = (j + 1) % capacity_;
+        }
+
         data_ = new_data;
     };
 
@@ -214,7 +233,11 @@ public:
     }
 
     void push_back(const T &value) {
-        if (is_full() or is_empty())
+        if (is_full()) {
+            traits_::destroy(alloc_, data_ + front_);
+            front_ = (front_ + 1) % capacity_;
+        }
+        if (is_empty())
             front_ = (front_ + 1) % capacity_;
         rear_ = (rear_ + 1) % capacity_;
         traits_::construct(alloc_, data_ + rear_, value);
@@ -222,6 +245,7 @@ public:
 
     void push_front(const T &value) {
         if (is_full()) {
+            traits_::destroy(alloc_, data_ + rear_);
             rear_ = (rear_ - 1) % capacity_;
         }
         if (is_empty()) {
@@ -255,14 +279,26 @@ public:
     }
 
     // первый элемент
-    T &peek() const {
+    T &peek() {
+        if (is_empty())
+            throw std::out_of_range("Buffer is empty");
+        return *(data_ + front_);
+    }
+
+    const T &peek() const {
         if (is_empty())
             throw std::out_of_range("Buffer is empty");
         return *(data_ + front_);
     }
 
     // последний элемент
-    T &foot() const {
+    T &foot() {
+        if (is_empty()) // исключение
+            throw std::out_of_range("Buffer is empty");
+        return *(data_ + rear_); // возвращать ссылку
+    }
+
+    const T &foot() const {
         if (is_empty()) // исключение
             throw std::out_of_range("Buffer is empty");
         return *(data_ + rear_); // возвращать ссылку
