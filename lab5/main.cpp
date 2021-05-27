@@ -504,7 +504,6 @@ int main() {
     info(test);
     test.push_back(9);
     info(test);
-
     auto it = min_element(test.begin(), test.end());
     std::cout << *it << ' ';
 
