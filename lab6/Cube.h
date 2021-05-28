@@ -118,7 +118,8 @@ private:
 public:
     void execute(const std::vector<std::string> &moves) {
         for (const std::string &m : moves) {
-            moves_lookup_[m];
+            auto x = moves_lookup_.find(m);
+            (*this.*(x->second))();
         }
         move_history_.push_back(moves);
         calculate_fitness();
@@ -229,11 +230,11 @@ public:
     void swap_x(std::tuple<std::string, int> t1, std::tuple<std::string, int> t2, std::tuple<std::string, int> t3,
                 std::tuple<std::string, int> t4) {
         std::vector<std::string> backup{"", "", ""};
-        copy_stickers(backup, faces_[get<0>(t4)][get<1>(t4)]);
-        copy_stickers(faces_[get<0>(t4)][get<1>(t4)], faces_[get<0>(t3)][get<1>(t3)]);
-        copy_stickers(faces_[get<0>(t3)][get<1>(t3)], faces_[get<0>(t2)][get<1>(t2)]);
-        copy_stickers(faces_[get<0>(t2)][get<1>(t2)], faces_[get<0>(t1)][get<1>(t1)]);
-        copy_stickers(faces_[get<0>(t1)][get<1>(t1)], backup);
+        copy_stickers(backup, faces_[std::get<0>(t4)][std::get<1>(t4)]);
+        copy_stickers(faces_[std::get<0>(t4)][std::get<1>(t4)], faces_[std::get<0>(t3)][std::get<1>(t3)]);
+        copy_stickers(faces_[std::get<0>(t3)][std::get<1>(t3)], faces_[std::get<0>(t2)][std::get<1>(t2)]);
+        copy_stickers(faces_[std::get<0>(t2)][std::get<1>(t2)], faces_[std::get<0>(t1)][std::get<1>(t1)]);
+        copy_stickers(faces_[std::get<0>(t1)][std::get<1>(t1)], backup);
     }
 
     //----------------------------------------------------------------
@@ -294,54 +295,82 @@ public:
                 std::tuple<std::string, int, bool> t4) {
         std::vector<std::string> backup{"", "", ""};
 
-        if (get<2>(t4))
-            copy_stickers(backup, flip(column(faces_[get<0>(t4)], get<1>(t4))));
+        if (std::get<2>(t4))
+            copy_stickers(backup, flip(column(faces_[std::get<0>(t4)], std::get<1>(t4))));
         else
-            copy_stickers(backup, column(faces_[get<0>(t4)], get<1>(t4)));
+            copy_stickers(backup, column(faces_[std::get<0>(t4)], std::get<1>(t4)));
 
-        if (get<2>(t3))
-            copy_stickers(column(faces_[get<0>(t4)], get<1>(t4)), flip(column(faces_[get<0>(t3)], get<1>(t3))));
+        if (std::get<2>(t3))
+            copy_stickers(column(faces_[std::get<0>(t4)], std::get<1>(t4)),
+                          flip(column(faces_[std::get<0>(t3)], std::get<1>(t3))));
         else
-            copy_stickers(column(faces_[get<0>(t4)], get<1>(t4)), column(faces_[get<0>(t3)], get<1>(t3)));
+            copy_stickers(column(faces_[std::get<0>(t4)], std::get<1>(t4)),
+                          column(faces_[std::get<0>(t3)], std::get<1>(t3)));
 
-        if (get<2>(t2))
-            copy_stickers(column(faces_[get<0>(t3)], get<1>(t3)), flip(column(faces_[get<0>(t2)], get<1>(t2))));
+        if (std::get<2>(t2))
+            copy_stickers(column(faces_[std::get<0>(t3)], std::get<1>(t3)),
+                          flip(column(faces_[std::get<0>(t2)], std::get<1>(t2))));
         else
-            copy_stickers(column(faces_[get<0>(t3)], get<1>(t3)), column(faces_[get<0>(t2)], get<1>(t2)));
+            copy_stickers(column(faces_[std::get<0>(t3)], std::get<1>(t3)),
+                          column(faces_[std::get<0>(t2)], std::get<1>(t2)));
 
-        if (get<2>(t1))
-            copy_stickers(column(faces_[get<0>(t2)], get<1>(t2)), flip(column(faces_[get<0>(t1)], get<1>(t1))));
+        if (std::get<2>(t1))
+            copy_stickers(column(faces_[std::get<0>(t2)], std::get<1>(t2)),
+                          flip(column(faces_[std::get<0>(t1)], std::get<1>(t1))));
         else
-            copy_stickers(column(faces_[get<0>(t2)], get<1>(t2)), column(faces_[get<0>(t1)], get<1>(t1)));
+            copy_stickers(column(faces_[std::get<0>(t2)], std::get<1>(t2)),
+                          column(faces_[std::get<0>(t1)], std::get<1>(t1)));
 
-        copy_stickers(column(faces_[get<0>(t1)], get<1>(t1)), backup);
+        copy_stickers(column(faces_[std::get<0>(t1)], std::get<1>(t1)), backup);
     }
 
     //----------------------------------------------------------------
     // Z Axis movements - B, F and S
     //----------------------------------------------------------------
 
-    void B() {}
+    void B() {
+        rot90(faces_[BACK], 1);
+        swap_z(std::make_tuple(BOTTOM, 2, true), std::make_tuple(RIGHT, 2, false), std::make_tuple(TOP, 0, true),
+               std::make_tuple(LEFT, 0, false));
+    }
 
-    void B_prime() {}
+    void B_prime() {
+        rot90(faces_[BACK], -1);
+        swap_z(std::make_tuple(BOTTOM, 2, false), std::make_tuple(LEFT, 0, true), std::make_tuple(TOP, 0, false),
+               std::make_tuple(RIGHT, 2, true));
+    }
 
     void B2() {
         B();
         B();
     }
 
-    void F() {}
+    void F() {
+        rot90(faces_[FRONT], 1);
+        swap_z(std::make_tuple(BOTTOM, 0, false), std::make_tuple(LEFT, 2, true), std::make_tuple(TOP, 2, false),
+               std::make_tuple(RIGHT, 0, true));
+    }
 
-    void F_prime() {}
+    void F_prime() {
+        rot90(faces_[FRONT], -1);
+        swap_z(std::make_tuple(BOTTOM, 0, true), std::make_tuple(RIGHT, 0, false), std::make_tuple(TOP, 2, true),
+               std::make_tuple(LEFT, 2, false));
+    }
 
     void F2() {
         F();
         F();
     }
 
-    void S() {}
+    void S() {
+        swap_z(std::make_tuple(BOTTOM, 1, false), std::make_tuple(LEFT, 1, true), std::make_tuple(TOP, 1, false),
+               std::make_tuple(RIGHT, 1, true));
+    }
 
-    void S_prime() {}
+    void S_prime() {
+        swap_z(std::make_tuple(BOTTOM, 1, true), std::make_tuple(RIGHT, 1, false), std::make_tuple(TOP, 1, true),
+               std::make_tuple(LEFT, 1, false));
+    }
 
     void S2() {
         S();
@@ -353,27 +382,30 @@ public:
                 std::tuple<std::string, int, bool> t4) {
         std::vector<std::string> backup{"", "", ""};
 
-        if (get<2>(t4))
-            copy_stickers(backup, flip(column(faces_[get<0>(t4)], get<1>(t4))));
+        if (std::get<2>(t4))
+            copy_stickers(backup, flip(column(faces_[std::get<0>(t4)], std::get<1>(t4))));
         else
-            copy_stickers(backup, column(faces_[get<0>(t4)], get<1>(t4)));
+            copy_stickers(backup, column(faces_[std::get<0>(t4)], std::get<1>(t4)));
 
-        if (get<2>(t3))
-            copy_stickers(column(faces_[get<0>(t4)], get<1>(t4)), flip(faces_[get<0>(t3)][get<1>(t3)]));
+        if (std::get<2>(t3))
+            copy_stickers(column(faces_[std::get<0>(t4)], std::get<1>(t4)),
+                          flip(faces_[std::get<0>(t3)][std::get<1>(t3)]));
         else
-            copy_stickers(column(faces_[get<0>(t4)], get<1>(t4)), faces_[get<0>(t3)][get<1>(t3)]);
+            copy_stickers(column(faces_[std::get<0>(t4)], std::get<1>(t4)), faces_[std::get<0>(t3)][std::get<1>(t3)]);
 
-        if (get<2>(t2))
-            copy_stickers(faces_[get<0>(t3)][get<1>(t3)], flip(column(faces_[get<0>(t2)], get<1>(t2))));
+        if (std::get<2>(t2))
+            copy_stickers(faces_[std::get<0>(t3)][std::get<1>(t3)],
+                          flip(column(faces_[std::get<0>(t2)], std::get<1>(t2))));
         else
-            copy_stickers(faces_[get<0>(t3)][get<1>(t3)], column(faces_[get<0>(t2)], get<1>(t2)));
+            copy_stickers(faces_[std::get<0>(t3)][std::get<1>(t3)], column(faces_[std::get<0>(t2)], std::get<1>(t2)));
 
-        if (get<2>(t1))
-            copy_stickers(column(faces_[get<0>(t2)], get<1>(t2)), flip(faces_[get<0>(t1)][get<1>(t1)]));
+        if (std::get<2>(t1))
+            copy_stickers(column(faces_[std::get<0>(t2)], std::get<1>(t2)),
+                          flip(faces_[std::get<0>(t1)][std::get<1>(t1)]));
         else
-            copy_stickers(column(faces_[get<0>(t2)], get<1>(t2)), faces_[get<0>(t1)][get<1>(t1)]);
+            copy_stickers(column(faces_[std::get<0>(t2)], std::get<1>(t2)), faces_[std::get<0>(t1)][std::get<1>(t1)]);
 
-        copy_stickers(faces_[get<0>(t1)][get<1>(t1)], backup);
+        copy_stickers(faces_[std::get<0>(t1)][std::get<1>(t1)], backup);
     }
 
     //----------------------------------------------------------------
@@ -461,26 +493,27 @@ public:
 
     void get_algorithm_str() {
         std::vector<std::vector<std::string>> ans = get_algorithm();
-        for (int i = 0; i < ans.size(); i++)
-            for (const std::string &j : ans[i])
-                std::cout << i << " ";
+        for (auto &an : ans)
+            for (const std::string &j : an)
+                std::cout << j << " ";
     }
 
-    int& fitness() {
+    int &fitness() {
         return fitness_;
     }
 
-    std::unordered_map<std::string, std::vector<std::vector<std::string >>>& faces()  {
+    std::unordered_map<std::string, std::vector<std::vector<std::string >>> &faces() {
         return faces_;
     }
 
     std::vector<std::vector<std::string>> move_history() {
         return move_history_;
     }
+
 };
 
 struct CubeCmp {
-    bool operator () (const Cube & a, const Cube & b) {
+    bool operator()(Cube &a, Cube &b) {
         return a.fitness() < b.fitness();
     }
 };
