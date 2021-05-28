@@ -59,14 +59,14 @@ std::vector<std::vector<std::string>> PERMUTATIONS = {
 
 class Solver {
 private:
-    int population_size;
-    int max_generations;
-    int max_resets;
-    int elitism_num;
+    int population_size_;
+    int max_generations_;
+    int max_resets_;
+    int elitism_num_;
 public:
     Solver(const int &population_size, const int &max_generations, const int &max_resets, const int &elitism_num)
-            : population_size(population_size), max_generations(max_generations), max_resets(max_resets),
-              elitism_num(elitism_num) {}
+            : population_size_(population_size), max_generations_(max_generations), max_resets_(max_resets),
+              elitism_num_(elitism_num) {}
 
     void solve(const std::vector<std::string> &scramble, bool verbose = false) const {
         time_t begin, end;
@@ -75,9 +75,9 @@ public:
         if (verbose)
             std::cout << "Starting...\n";
 
-        for (int r = 0; r < max_resets; r++) {
+        for (int r = 0; r < max_resets_; r++) {
             std::vector<Cube> cubes;
-            for (int i = 0; i < population_size; i++) {
+            for (int i = 0; i < population_size_; i++) {
                 Cube cube = Cube();
                 cube.execute(scramble);
                 cube.execute(rnd_single_move());
@@ -85,7 +85,7 @@ public:
                 cubes.push_back(cube);
             }
 
-            for (int g = 0; g < max_generations; g++) {
+            for (int g = 0; g < max_generations_; g++) {
                 std::sort(cubes.begin(), cubes.end(), CubeCmp());
 
                 if (verbose and g % 20 == 0 and g != 0) {
@@ -98,18 +98,18 @@ public:
                 for (int i = 0; i < cubes.size(); i++) {
                     if (cubes[i].fitness() == 0) {
                         std::cout << "Solution found\n";
-                        std::cout << "World: " << r + 1 << " - Generation: " << g << "\n";
+                        std::cout << "World: " << r + 1 << " - Generation: " << g + 1 << "\n";
                         cubes[i].get_scramble_str();
                         std::cout << "\nSolution\n";
                         cubes[i].get_algorithm_str();
                         std::cout << "\nMoves: " << cubes[i].get_algorithm().size();
                         time(&end);
-                        std::cout << end - begin << " seconds\n";
+                        std::cout << "\n" << end - begin << " seconds\n";
                         return;
                     }
 
-                    if (i > elitism_num) {
-                        copy(cubes[i], cubes[rand() % elitism_num]);
+                    if (i > elitism_num_) {
+                        copy(cubes[i], cubes[rand() % elitism_num_]);
                         int evolution_type = rand() % 6;
 
                         switch (evolution_type) {
@@ -143,13 +143,13 @@ public:
                 }
             }
 
-            if(verbose)
+            if (verbose)
                 std::cout << "Resetting the world";
-
-            std::cout << "Solution not found\n";
-            time(&end);
-            std::cout << end - begin << " seconds\n";
         }
+
+        std::cout << "Solution not found\n";
+        time(&end);
+        std::cout << end - begin << " seconds\n";
     }
 
     void copy(Cube cube_to, Cube cube_from) const {
@@ -166,8 +166,7 @@ public:
     }
 
     std::vector<std::string> rnd_single_move() const {
-        std::vector<std::string> ans{SINGLE_MOVES[rand() % SINGLE_MOVES.size()]};
-        return ans;
+        return std::vector<std::string>{SINGLE_MOVES[rand() % SINGLE_MOVES.size()]};
     }
 
     std::vector<std::string> rnd_permutation() const {
@@ -175,20 +174,18 @@ public:
     }
 
     std::vector<std::string> rnd_full_rotation() const {
-        std::vector<std::string> ans{FULL_ROTATIONS[rand() % FULL_ROTATIONS.size()]};
-        return ans;
+        return std::vector<std::string>{FULL_ROTATIONS[rand() % FULL_ROTATIONS.size()]};
     }
 
     std::vector<std::string> rnd_orientation() const {
-        std::vector<std::string> ans{ORIENTATIONS[rand() % ORIENTATIONS.size()]};
-        return ans;
+        return std::vector<std::string>{ORIENTATIONS[rand() % ORIENTATIONS.size()]};
     }
 };
 
 int main() {
     srand((unsigned) time(nullptr));
 
-    std::string scramble_str = "U";
+    std::string scramble_str = "D' U";
     std::vector<std::string> scramble = split(scramble_str, " ");
 
     int population_size = 500;
@@ -197,7 +194,7 @@ int main() {
     int elitism_num = 50;
 
     Solver solver(population_size, max_generations, max_resets, elitism_num);
-    solver.solve(scramble, true);
+    solver.solve(scramble);
 
     return 0;
 }
